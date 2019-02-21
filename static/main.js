@@ -1,160 +1,153 @@
 class Profile {
-    constuctor({username, name, lastName, password}) {
-        this.username = username;
-        this.name = name;
-        this.lastName = lastName;
-        this.password = password;
+  constructor({ username, name: { firstName, lastName }, password }) {
+    this.username = username;
+    this.name = {
+      firstName,
+      lastName,
+    };
+    this.password = password;
 
-        this.status = false;
-        this.money = false;
-    }
+    this.status = false;
+    this.money = false;
+  }
 
-    createUser(
-        {
-            username,
-            name: { firstName, lastName },
-            password,
-        },
-        callback
-    ) {
-        return ApiConnector.createUser({username, name: { firstName, lastName }, password}, (err, data) => {
-            callback(err, data);
-        });
-    }
+  createUser(callback) {
+    return ApiConnector.createUser({ username: this.username, name: this.name, password: this.password }, (err, data) => {
+      console.log(`Пользователь ${this.name.firstName} создан`);
+      callback(err, data);
+    });
+  }
+  authorize(callback) {
+    return ApiConnector.performLogin(
+      { username: this.username, password: this.password },
+      (err, data) => {
+        console.log(`Пользователь ${this.name.firstName} авторизован`);
+        callback(err, data);
+      }
+    );
+  }
 
-    performLogin({ username, password }, callback) {
-        return ApiConnector.performLogin({ username, password }, (err, data) => {
-            callback(err, data);
-        });
-    }
+  addMoney({ currency, amount }, callback) {
+    return ApiConnector.addMoney({ currency, amount }, (err, data) => {
+      console.log(`Зачисленно ${amount} ${currency}`);
+      callback(err, data);
+    });
+  }
 
-    addMoney({ currency, amount }, callback) {
-        return ApiConnector.addMoney({ currency, amount }, (err, data) => {
-            callback(err, data);
-        });
-    }
+  transferMoney({ to, amount }, callback) {
+    return ApiConnector.transferMoney({ to, amount }, (err, data) => {
+      console.log(`Переведено ${amount} пользователю ${to} `);
+      callback(err, data);
+    });
+  }
 
-    transferMoney({ to, amount }, callback) {
-        return ApiConnector.transferMoney({ to, amount }, (err, data) => {
-            callback(err, data);
-        });
-    }
+  convertMoney({ fromCurrency, targetCurrency, targetAmount }, callback) {
+    return ApiConnector.convertMoney({ fromCurrency, targetCurrency, targetAmount }, (err, data) => {
+      console.log(`Конвертация ${fromCurrency} в ${targetAmount} ${targetCurrency}`);
+      callback(err, data);
+    });
+  }
 
-    convertMoney({ fromCurrency, targetCurrency, targetAmount }, callback) {
-        return ApiConnector.convertMoney({ fromCurrency, targetCurrency, targetAmount }, (err, data) => {
-            callback(err, data);
-        });
-    }
-
-    getStocks(callback) {
-       return ApiConnector.getStocks((err, data) => {
-            callback(err, data);
-       });
-    }
-
-    getStatus() {
-        return this.status;
-    }
-
-    isMoney() {
-        return this.money;
-    }
+  getStocks(callback) {
+    return ApiConnector.getStocks((err, data) => {
+      console.log(`Текущий курс`);
+      callback(err, data);
+    });
+  }
 }
 
-function main(){
-    const Oleg = new Profile({
-                    username: 'oleg',
-                    name: { firstName: 'oleg', lastName: 'Chernyshev' },
-                    password: 'done'
-                });
+function main() {
+  let user = new Profile({
+    username: 'Ivan',
+    name: { firstName: 'Ivan', lastName: 'Ivanov' },
+    password: 'gfhj'
+  });
 
 
-    Oleg.createUser({
-                    username: 'oleg',
-                    name: { firstName: 'oleg', lastName: 'Chernyshev' },
-                    password: 'done'
-                    }, (err, data) => {
-        if (err) {
-            if(err.code === 409) {
-                Oleg.performLogin({ username: 'djon', password: 'djonspass' }, (err, data) => {
-                    if (err) {
-                        console.error(err.code);
-                    } else {
-                        this.status = true;
-                        console.log(`Authoriing user Oleg`);
-                    }
-                });
-            }
-        } else {
-            this.status = true;
-            console.log(`Creating user Oleg`);
-        }
+  user.createUser((err, data) => {
+    if (err) {
+      if (err.code === 409) {
+        user.authorize((err, data) => {
+          if (err) {
+            console.error('Не авторизован');
+          } else {
+            user.status = true;
+            //console.log(`Авторизован ${username}`);
+          }
+        });
+      }
+    } else {
+      user.status = true;
+      console.log(`Создан пользователь ${user.name.firstName}`);
+    }
+  });
+
+  let user2 = new Profile({
+    username: 'petr',
+    name: { firstName: 'Petr', lastName: 'Petrov' },
+    password: 'ivanspass',
+  });
+
+  user2.createUser((err, data) => {
+    if (err) {
+      if (err.code === 409) {
+        user2.authorize((err, data) => {
+          if (err) {
+            console.error('Не авторизован');
+          } else {
+            user2.status = true;
+            //console.log(`Авторизован ${username}`);
+          }
+        });
+      }
+    } else {
+      user2.status = true;
+      console.log(`Создан пользователь  ${user2.name.firstName}`);
+    }
+  });
+
+  user2.addMoney({ currency: 'RUB', amount: 500000 }, (err, data) => {
+    if (err) {
+      console.error(`Ошибка при зачислении денег на счет пользователю ${user2.name.firstName}`);
+    } else {
+      console.log(`Зачисленно 500000 руб на счет пользователю ${user2.name.firstName}`);
+      user2.money = true;
+    }
+  });
+
+  let timer1 = setInterval(() => {
+    user2.addMoney({ currency: 'RUB', amount: 500000 }, (err, data) => {
+      if (err) {
+        console.error(`Ошибка при зачислении денег на счет пользователю ${user2.name.firstName}`);
+      } else {
+        console.log(`Зачисленно 500000 руб на счет пользователю ${user2.name.firstName}`);
+        user2.isMoney = true;
+      }
+    });
+    user2.convertMoney({ fromCurrency: 'RUB', targetCurrency: 'NETCOIN', targetAmount: 100 }, (err, data) => {
+      if (err) {
+        console.log(err.message);
+      } else {
+        //console.log(`Конвертация рубля в 100 ${targetCurrency}`);
+      }
     });
 
-    const Ivan = new Profile({
-                    username: 'djon',
-                    name: { firstName: 'djon', lastName: 'Chernyshev' },
-                    password: 'djonspass',
-                });
-
-    Ivan.createUser({
-                    username: 'djon',
-                    name: { firstName: 'djon', lastName: 'Chernyshev' },
-                    password: 'djonspass',
-                    }, (err, data) => {
-        if (err.code === 409) {
-            Ivan.performLogin({ username: 'djon', password: 'djonspass' }, (err, data) => {
-                if (err) {
-                    console.error(err.code);
-                } else {
-                    Ivan.status = true;
-                    console.log(`Authoriing user Ivan`);
-                }
-            });
-        } else {
-            Ivan.status = true;
-            console.log(`Creating user Ivan`);
-        }
+    user2.transferMoney({ to: 'ivan', amount: 100 }, (err, data) => {
+      if (err) {
+        console.error(err.code);
+        console.error(err.message);
+      } else {
+        //console.log(`переведино 100 пользователю `);
+      }
     });
 
-    let timer1 = setInterval(() => {
-        if(Ivan.getStatus()) {
-            Ivan.addMoney({ currency: 'RUB', amount: 500000 }, (err, data) => {
-                if (err) {
-                    console.error('Error during adding money to Ivan');
-                } else {
-                    console.log(`Added 500000 rub to Ivan`);
-                    Ivan.money = true;
-                }
-            });
-            Ivan.convertMoney({ fromCurrency: 'RUB', targetCurrency: 'NETCOIN', targetAmount: 100 }, (err, data) => {
-                if (err) {
-                    console.log(err.message);
-                } else {
-                    console.log(`Converting RUB to 100 Netcoin`);
-                }
-            });
-
-            Ivan.transferMoney({ to: 'oleg', amount: 100 }, (err, data) => {
-                if (err) {
-                    console.error(err.code);
-                    console.error(err.message);
-                } else {
-                    console.log(`transfering 100 to Oleg`);
-                }
-            });
-
-            Ivan.getStocks((err, data) => {
-                if(err) {
-                    console.error(err.message);
-                } else {
-                    console.log(data[0]);
-                }
-            });
-
-            clearInterval(timer1);
-        }
-    }, 1000);
+    user2.getStocks((err, data) => {
+      if (err) {
+        console.error(err.message);
+      } else {
+        console.log(data[0]);
+      }
+    });
+    clearInterval(timer1);
+  }, 1000);
 }
-
-main()
